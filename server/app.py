@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Import necessary libraries
+# Import necessary libraries,
 from flask import Flask, request, make_response
 from flask_migrate import Migrate
 from models import db, Hero, Power, HeroPower
