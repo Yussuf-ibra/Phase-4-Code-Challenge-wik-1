@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import validates
 from sqlalchemy_serializer import SerializerMixin
 
 metadata = MetaData()
@@ -15,9 +16,11 @@ class Hero(db.Model, SerializerMixin):
     name = db.Column(db.String)
     super_name = db.Column(db.String)
 
+    
     powers = association_proxy('hero_powers', 'power', creator=lambda power_obj: HeroPower(power=power_obj))
     hero_powers = db.relationship('HeroPower', back_populates='hero', cascade='all, delete-orphan')
 
+    
     serialize_rules = ('-hero_powers.hero', '-hero_powers.power')
 
     def __repr__(self):
@@ -36,15 +39,11 @@ class Power(db.Model, SerializerMixin):
 
     serialize_rules = ('-hero_powers.power',)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.validate_length()
-
-    def validate_length(self):
-        if len(self.description) < 20:
+    @validates('description')
+    def validate_length(self, key, value):
+        if len(value) < 20:
             raise ValueError('Description must be at least 20 characters long')
-
-    
+        return value
 
     def __repr__(self):
         return f'<Power {self.id} - {self.name}>'
@@ -62,15 +61,14 @@ class HeroPower(db.Model, SerializerMixin):
     power = db.relationship('Power', back_populates='hero_powers')
 
     serialize_rules = ('-hero.hero_powers', 'power.hero_powers')
+
     VALID_STRENGTHS = ['Strong', 'Weak', 'Average']
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.validate_strength()
-
-    def validate_strength(self):
-        if self.strength not in self.VALID_STRENGTHS:
+    @validates('strength')
+    def validate_strength(self, key, value):
+        if value not in self.VALID_STRENGTHS:
             raise ValueError('Strength is not a valid option')
-        
+        return value
+
     def __repr__(self):
         return f'<HeroPower {self.id} - Strength: {self.strength}>'
